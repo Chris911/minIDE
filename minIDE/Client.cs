@@ -18,8 +18,8 @@ namespace minIDE
         public Client()
         { 
             //Load username and password from config
-            Username = "Chris911";
-            Password = "s7WG87k4aQ26X7";
+            Username = "";
+            Password = "";
 
         }
 
