@@ -36,8 +36,7 @@ namespace minIDE
         private void compileButton_Click(object sender, RoutedEventArgs e)
         {
             String codeText = codeTextBox1.Text;
-            String outputText = controller.sendCodeToServer(codeText, 55);
-            outputTextBox1.Text = outputText;
+            outputTextBox1.Text = controller.sendSubmission(codeText, "", 55);
         }
 
 

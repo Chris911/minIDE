@@ -4,56 +4,41 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using ideone.Client;
+using ideone;
 
 namespace minIDE
 {
+    /// <summary>
+    /// In charge of the transactions between the view and the backend processing
+    /// </summary>
     class Controller
     {
-        // Should be placed in configuration file
-        String ideOneUser     = "";
-        String ideOnePassword = "";
+        Client ideoneClient = new Client();
 
-        public String sendCodeToServer(String sourceCode, int language)
+        /// <summary>
+        /// Send submission to ideone servers and return information
+        /// </summary>
+        /// <param name="sourceCode"></param>
+        /// <param name="input"></param>
+        /// <param name="language"></param>
+        /// <returns></returns>
+        public String sendSubmission(String sourceCode, String input, int language)
         {
-            Dictionary<string, string> result = new Dictionary<string, string>();
-            Ideone_ServiceService client = new Ideone_ServiceService();
-            Object[] ret = client.createSubmission(ideOneUser, ideOnePassword, sourceCode, language, null, true, true);
-            
-            foreach (object o in ret)
+            // TODO: Make the submission process async / threaded
+            Submission submission = ideoneClient.createSubmission(sourceCode, language, input);
+
+            while (!ideoneClient.isSubmissionCompiled(submission))
             {
-                if (o is XmlElement)
-                {
-                    XmlNodeList x = ((XmlElement)o).ChildNodes;
-                    result.Add(x.Item(0).InnerText, x.Item(1).InnerText);
-                }
+                // HACK: Should rather be done using a Timer or other mechanism
+                // TODO: Progress bar with changing states (See ideone API doc)
+                System.Threading.Thread.Sleep(1500);
             }
 
-            Object[] retDet = client.getSubmissionDetails(ideOneUser, ideOnePassword, result["link"],
-                false, true, true, true, true);
+            ideoneClient.getSubmissionDetails(submission);
 
-            foreach (object o in retDet)
-            {
-                if (o is XmlElement)
-                {
-                    XmlNodeList x = ((XmlElement)o).ChildNodes;
-                    if(!result.ContainsKey(x.Item(0).InnerText))
-                        result.Add(x.Item(0).InnerText, x.Item(1).InnerText);
-                }
-            }
-
-            return buildOutputMessage(result);
+            return submission.ToString() ;
         }
 
-        // Should be moved out of this class
-        private String buildOutputMessage(Dictionary<string, string> result)
-        {
-            StringBuilder builder = new StringBuilder();
-            foreach (KeyValuePair<string, string> kvp in result)
-            {
-                builder.Append(kvp.Key + " : " + kvp.Value + "\n");
-            }
-
-            return builder.ToString();
-        }
     }
 }
