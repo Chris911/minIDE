@@ -1,45 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using AvalonDock.Layout;
-using AvalonDock.Layout.Serialization;
 
 namespace minIDE
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    ///     Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
-        Controller controller;
+        private Controller _controller;
 
         public MainWindow()
         {
             //InitializeComponent();
             //var firstDocumentPane = dockingManager.Layout.;
-            
+
             //Init Controller
-            controller = new Controller(); 
+            _controller = new Controller();
         }
 
         private void compileButton_Click(object sender, RoutedEventArgs e)
         {
-            String codeText = codeTextBox1.Text;
-            outputTextBox1.Text = controller.sendSubmission(codeText, "", 55);
+            String codeText = CodeTextBox1.Text;
+            int language = _controller.LanguageToIdMap[LanguagesList.SelectedItem.ToString()];
+            OutputTextBox1.Text = _controller.SendSubmission(codeText, "", 55);
         }
 
-
-
+        private void LanguagesList_OnLoaded(object sender, RoutedEventArgs e)
+        {
+            List<String> langList = _controller.GetLanguagesList();
+            foreach (string lang in langList)
+            {
+                LanguagesList.Items.Add(lang);
+            }
+            LanguagesList.SelectedIndex = 0;
+        }
     }
 }

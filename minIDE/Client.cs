@@ -1,26 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Windows;
 using System.Xml;
-using ideone;
 
-namespace ideone.Client
+namespace minIDE
 {
     public class Client
     {
-        String username;
-        String password;
+        // Set/get are here for configuration at runtime
+        public String Username { get; set; }
+        public String Password { get; set; }
 
         //Actual ideone client
-        Ideone_ServiceService ideoneClient = new Ideone_ServiceService();
+        private Ideone_ServiceService _ideoneClient = new Ideone_ServiceService();
 
         public Client()
         { 
             //Load username and password from config
-            username = "";
-            password = "";
+            Username = "Chris911";
+            Password = "s7WG87k4aQ26X7";
+
         }
 
         /// <summary>
@@ -30,19 +30,27 @@ namespace ideone.Client
         /// <param name="language"></param>
         /// <param name="input"></param>
         /// <returns></returns>
-        public Submission createSubmission(String sourceCode, int language, String input)
+        public Submission CreateSubmission(String sourceCode, int language, String input)
         {
-            Object[] ret = ideoneClient.createSubmission(
-                this.username, 
-                this.password, 
+            Object[] ret = _ideoneClient.createSubmission(
+                this.Username,
+                this.Password, 
                 sourceCode, 
                 language, 
                 input, 
                 true, 
                 true);
 
-            Dictionary<string, string> result = this.resultToDict(ret);
-            Submission submission = new Submission(result["link"], result["error"]);
+            Dictionary<string, string> result = ResultToDict(ret);
+            Submission submission = new Submission {ErrorCode = result["error"]};
+            if (submission.ErrorCode == "OK")
+            {
+                submission.Link = result["link"];
+            }
+            else
+            {
+                ThrowClientError(result["error"]);
+            }
 
             return submission;
         }
@@ -50,18 +58,18 @@ namespace ideone.Client
         /// <summary>
         /// Get details about a ideone.com submission.
         /// </summary>
-        /// <param name="link"></param>
+        /// <param name="submission"></param>
         /// <returns></returns>
-        public void getSubmissionDetails(Submission submission)
+        public void GetSubmissionDetails(Submission submission)
         {
-            Object[] ret = ideoneClient.getSubmissionDetails(
-                this.username, 
-                this.password,
-                submission.link,
+            Object[] ret = _ideoneClient.getSubmissionDetails(
+                this.Username,
+                this.Password,
+                submission.Link,
                 true, true, true, true, true);
 
-            Dictionary<string, string> result = this.resultToDict(ret);
-            submission.addDetails(result);
+            Dictionary<string, string> result = ResultToDict(ret);
+            submission.AddDetails(result);
         }
 
         /// <summary>
@@ -69,37 +77,99 @@ namespace ideone.Client
         /// </summary>
         /// <param name="submission"></param>
         /// <returns></returns>
-        public Boolean isSubmissionCompiled(Submission submission)
+        public Boolean IsSubmissionCompiled(Submission submission)
         {
-            Object[] ret = ideoneClient.getSubmissionDetails(
-                this.username,
-                this.password,
-                submission.link,
+            Object[] ret = _ideoneClient.getSubmissionDetails(
+                this.Username,
+                this.Password,
+                submission.Link,
                 false, false, false, false, false);
 
-            Dictionary<string, string> result = this.resultToDict(ret);
+            Dictionary<string, string> result = ResultToDict(ret);
 
-            return (true ? result["status"] == "0" : false);
+            return (true && result["status"] == "0");
         }
+
+
         /// <summary>
         /// Generate a Dictionary from the results in XML
         /// </summary>
         /// <param name="results"></param>
         /// <returns></returns>
-        private Dictionary<string, string> resultToDict(Object[] results)
+        private static Dictionary<string, string> ResultToDict(IEnumerable<object> results)
         {
-            Dictionary<string, string> dictResult = new Dictionary<string, string>();
-            foreach (object o in results)
+            // TODO: At the moment we return null if there's an error. Might be better to throw exception
+            if (results == null) return null;
+
+            var dictResult = new Dictionary<string, string>();
+            try
             {
-                if (o is XmlElement)
+                foreach (XmlNodeList x in results
+                    .OfType<XmlElement>()
+                    .Select(o => (o).ChildNodes)
+                    .Where(x => !dictResult.ContainsKey(x.Item(0).InnerText)))
                 {
-                    XmlNodeList x = ((XmlElement)o).ChildNodes;
-                    if (!dictResult.ContainsKey(x.Item(0).InnerText))
-                        dictResult.Add(x.Item(0).InnerText, x.Item(1).InnerText);
+                    dictResult.Add(x.Item(0).InnerText, x.Item(1).InnerText);
                 }
+            }
+            catch (Exception)
+            {
+                return null;
             }
 
             return dictResult;
+        }
+
+        public Dictionary<string, int> LoadLanguages()
+        {
+            var languages = _ideoneClient.getLanguages(this.Username, this.Password);
+            if (languages == null)
+            {
+                ThrowClientError("Error loading languages list");
+                return null;
+            }
+            if (languages[2] is XmlElement)
+            {
+                var langDict = new Dictionary<string, int>();
+                try
+                {
+                    XmlNodeList langNodeList = ((XmlElement) languages[2]).ChildNodes.Item(1).ChildNodes;
+                    foreach (XmlElement x in langNodeList)
+                    {
+                        string langName = x.ChildNodes.Item(1).InnerText;
+                        int langId = Convert.ToInt32(x.ChildNodes.Item(0).InnerText);
+                        langDict.Add(langName, langId);
+                    }
+                }
+                catch (Exception e)
+                {
+                    ThrowClientError("Error loading languages list");
+                }
+
+                return langDict;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Throw error message related to the ideone client
+        /// </summary>
+        /// <param name="error"></param>
+        private static void ThrowClientError(String error)
+        {
+            // TODO: At some point this will have to be moved into a resource file
+            if (error == "AUTH_ERROR")
+                error = "There was an error logging in to the ideone.com API. Make sure your credentials are valid.";
+            else if (error == "PASTE_NOT_FOUND")
+                error = "The paste ID submitted is invalid.";
+            else if (error == "WRONG_LANG_ID")
+                error = "Unknown language selected.";
+            else if (error == "ACCESS_DENIED")
+                error = "You do not have access to this paste.";
+            else if (error == "CANNOT_SUBMIT_THIS_MONTH_ANYMORE")
+                error = "You reached your monthly limit. See http://ideone.com/offer/users for details)";
+
+            MessageBox.Show(error, "Ideone Client Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }

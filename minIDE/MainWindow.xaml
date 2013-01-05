@@ -57,13 +57,13 @@
         
         <Separator />
         <Label Content="Compile" Height="26" VerticalAlignment="Top"/>
-        <Button Name="compileButton" Click="compileButton_Click">
+        <Button Name="CompileButton" Click="compileButton_Click">
             <Image Source="Resources/Icons/Toolbar/tick.png" Height="16" />
         </Button>
        
         </ToolBar>
-    <Grid x:Name="layoutRoot">
-        <avalonDock:DockingManager x:Name="dockingManager">
+    <Grid x:Name="LayoutRoot">
+        <avalonDock:DockingManager x:Name="DockingManager">
             <avalonDock:LayoutRoot>
                 <avalonDock:LayoutPanel Orientation="Horizontal">
                     
@@ -75,22 +75,22 @@
                         </avalonDock:LayoutAnchorablePane>
                         <avalonDock:LayoutAnchorablePane>
                             <avalonDock:LayoutAnchorable Title="Languages">
-                                <ListBox/>
+                                <ListBox x:Name="LanguagesList" Loaded="LanguagesList_OnLoaded" />
                             </avalonDock:LayoutAnchorable>
                             <avalonDock:LayoutAnchorable Title="Favorites">
-                                <ListBox/>
+                                <ListBox x:Name="FavoritesList"/>
                             </avalonDock:LayoutAnchorable>
                         </avalonDock:LayoutAnchorablePane>
                     </avalonDock:LayoutAnchorablePaneGroup>
                     
                      <avalonDock:LayoutDocumentPaneGroup Orientation="Vertical">
-                        <avalonDock:LayoutDocumentPane x:Name="codeTextPane">
+                        <avalonDock:LayoutDocumentPane x:Name="CodeTextPane">
                             <avalonDock:LayoutDocument Title="Doc1">
                                 <TextBox 
                                     TextWrapping="Wrap" 
                                     AcceptsReturn="True" 
                                     VerticalScrollBarVisibility="Visible"
-                                    x:Name="codeTextBox1"/>
+                                    x:Name="CodeTextBox1"/>
                             </avalonDock:LayoutDocument>
                             <avalonDock:LayoutDocument Title="Doc2">
                                 <TextBox/>
@@ -102,7 +102,7 @@
                                     TextWrapping="Wrap" 
                                     AcceptsReturn="True" 
                                     VerticalScrollBarVisibility="Visible"
-                                    x:Name="outputTextBox1"/>
+                                    x:Name="OutputTextBox1"/>
                             </avalonDock:LayoutDocument>
                         </avalonDock:LayoutDocumentPane>
                     </avalonDock:LayoutDocumentPaneGroup>

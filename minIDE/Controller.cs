@@ -4,8 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
-using ideone.Client;
-using ideone;
 
 namespace minIDE
 {
@@ -14,7 +12,15 @@ namespace minIDE
     /// </summary>
     class Controller
     {
-        Client ideoneClient = new Client();
+        Client _ideoneClient = new Client();
+
+        // HACK: Not sure if this should be here
+        public Dictionary<string, int> LanguageToIdMap;
+
+        public Controller()
+        {;
+            LanguageToIdMap = _ideoneClient.LoadLanguages();
+        }
 
         /// <summary>
         /// Send submission to ideone servers and return information
@@ -23,22 +29,30 @@ namespace minIDE
         /// <param name="input"></param>
         /// <param name="language"></param>
         /// <returns></returns>
-        public String sendSubmission(String sourceCode, String input, int language)
+        public String SendSubmission(String sourceCode, String input, int language)
         {
             // TODO: Make the submission process async / threaded
-            Submission submission = ideoneClient.createSubmission(sourceCode, language, input);
+            Submission submission = _ideoneClient.CreateSubmission(sourceCode, language, input);
+            
+            if (! submission.IsValid())
+                return submission.ErrorCode;
 
-            while (!ideoneClient.isSubmissionCompiled(submission))
+            while (!_ideoneClient.IsSubmissionCompiled(submission))
             {
                 // HACK: Should rather be done using a Timer or other mechanism
                 // TODO: Progress bar with changing states (See ideone API doc)
                 System.Threading.Thread.Sleep(1500);
             }
 
-            ideoneClient.getSubmissionDetails(submission);
+            _ideoneClient.GetSubmissionDetails(submission);
 
             return submission.ToString() ;
         }
+
+        public List<String> GetLanguagesList()
+        {
+            return LanguageToIdMap.Keys.ToList();
+        } 
 
     }
 }
